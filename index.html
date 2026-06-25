@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>PNW Climate Week Portland — Event Map</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --forest:  #1a3a2a;
+      --moss:    #2d6a4f;
+      --fern:    #52b788;
+      --mist:    #d8f3dc;
+      --slate:   #2b2d42;
+      --fog:     #f4f7f5;
+      --white:   #ffffff;
+      --text:    #1c1e2a;
+      --muted:   #6b7280;
+      --border:  #dde5e0;
+      --radius:  10px;
+      --panel:   320px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--fog);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--forest);
+      color: var(--white);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-shrink: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: var(--fern);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .header-title h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem; font-weight: 700; line-height: 1.2; color: var(--white);
+    }
+    .header-title p {
+      font-size: 0.72rem; color: var(--fern); font-weight: 500;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .event-count-badge {
+      background: var(--fern); color: var(--forest);
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+      font-size: 0.8rem; padding: 4px 10px; border-radius: 20px; white-space: nowrap;
+    }
+
+    /* ── Layout ── */
+    .app-body { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--panel); flex-shrink: 0;
+      display: flex; flex-direction: column;
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      overflow: hidden; z-index: 5;
+    }
+    .search-wrap { padding: 14px 14px 0; }
+    .search-input-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--fog); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 0 12px; transition: border-color 0.2s;
+    }
+    .search-input-row:focus-within { border-color: var(--fern); background: var(--white); }
+    .search-input-row svg { color: var(--muted); flex-shrink: 0; }
+    #search-box {
+      flex: 1; border: none; background: transparent; padding: 10px 0;
+      font-family: 'Inter', sans-serif; font-size: 0.875rem; color: var(--text); outline: none;
+    }
+    #search-box::placeholder { color: var(--muted); }
+    #clear-search {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 1rem; line-height: 1; padding: 2px; display: none;
+    }
+
+    /* Hashtag filter bar */
+    .filter-section { padding: 10px 14px 0; }
+    .filter-label {
+      font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin-bottom: 7px;
+    }
+    .tag-scroller {
+      display: flex; gap: 6px; overflow-x: auto;
+      padding-bottom: 8px; scrollbar-width: none;
+    }
+    .tag-scroller::-webkit-scrollbar { display: none; }
+    .tag-pill {
+      flex-shrink: 0; background: var(--fog); border: 1.5px solid var(--border);
+      color: var(--slate); font-size: 0.72rem; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap; user-select: none;
+    }
+    .tag-pill:hover { border-color: var(--fern); color: var(--moss); background: var(--mist); }
+    .tag-pill.active { background: var(--moss); border-color: var(--moss); color: var(--white); }
+
+    /* Results bar */
+    .results-bar {
+      padding: 8px 14px 6px; display: flex; align-items: center;
+      justify-content: space-between; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .results-bar span { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+    #reset-filters {
+      font-size: 0.72rem; color: var(--moss); font-weight: 600;
+      background: none; border: none; cursor: pointer; display: none;
+    }
+    #reset-filters:hover { text-decoration: underline; }
+
+    /* Event list */
+    .event-list {
+      flex: 1; overflow-y: auto; padding: 6px 0;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .event-card {
+      padding: 12px 14px; cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s; position: relative;
+    }
+    .event-card:hover { background: var(--fog); }
+    .event-card.selected { background: var(--mist); }
+    .event-card.selected::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; background: var(--fern);
+    }
+    .event-name {
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.875rem;
+      font-weight: 600; color: var(--text); line-height: 1.35; margin-bottom: 3px;
+    }
+    .event-address { font-size: 0.75rem; color: var(--muted); margin-bottom: 7px; line-height: 1.4; }
+    .event-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .event-tag {
+      font-size: 0.67rem; font-weight: 600; color: var(--moss);
+      background: var(--mist); padding: 2px 7px; border-radius: 12px;
+      cursor: pointer; transition: background 0.1s;
+    }
+    .event-tag:hover { background: #b7e4c7; }
+    .event-tag.highlight { background: var(--moss); color: var(--white); }
+    .directions-btn {
+      margin-top: 8px; display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.72rem; font-weight: 600; color: var(--white);
+      background: var(--moss); border: none; border-radius: 6px;
+      padding: 5px 10px; cursor: pointer; text-decoration: none; transition: background 0.15s;
+    }
+    .directions-btn:hover { background: var(--forest); }
+    .no-results {
+      padding: 32px 20px; text-align: center;
+      color: var(--muted); font-size: 0.875rem; display: none;
+    }
+
+    /* ── Map ── */
+    #map-container { flex: 1; position: relative; }
+    #map { width: 100%; height: 100%; }
+
+    /* ── Traffic / Transit Toggle Buttons ── */
+    .map-layer-controls {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 5;
+    }
+    .layer-btn {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--white); border: 2px solid var(--border);
+      border-radius: 8px; padding: 7px 12px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 0.78rem; font-weight: 600;
+      color: var(--slate); cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      transition: all 0.15s; white-space: nowrap; user-select: none;
+    }
+    .layer-btn:hover { border-color: var(--fern); color: var(--moss); }
+    .layer-btn.active {
+      background: var(--moss); border-color: var(--moss); color: var(--white);
+      box-shadow: 0 2px 8px rgba(45,106,79,0.35);
+    }
+    .layer-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; transition: background 0.15s;
+    }
+    #btn-traffic .layer-dot { background: #e07a2f; }
+    #btn-traffic.active .layer-dot { background: #ffcc00; }
+    #btn-transit .layer-dot { background: #1967d2; }
+    #btn-transit.active .layer-dot { background: #74c0fc; }
+
+    /* Info window */
+    .gm-iw-title {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+      font-size: 0.95rem; color: var(--text); margin-bottom: 4px;
+    }
+    .gm-iw-addr { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
+    .gm-iw-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+    .gm-iw-tag {
+      font-size: 0.65rem; font-weight: 700; color: var(--moss);
+      background: var(--mist); padding: 2px 7px; border-radius: 12px;
+    }
+    .gm-iw-dir {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.75rem; font-weight: 600; color: var(--white);
+      background: var(--moss); padding: 6px 12px; border-radius: 6px; text-decoration: none;
+    }
+    .gm-iw-dir:hover { background: var(--forest); }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .app-body { flex-direction: column; }
+      .sidebar { width: 100%; height: 42dvh; border-right: none; border-bottom: 1px solid var(--border); }
+      #map-container { flex: 1; }
+      :root { --panel: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-mark">🌲</div>
+    <div class="header-title">
+      <h1>PNW Climate Week Portland</h1>
+      <p>Interactive Event Locator</p>
+    </div>
+  </div>
+  <div class="event-count-badge" id="header-count">33 events</div>
+</header>
+
+<div class="app-body">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="search-wrap">
+      <div class="search-input-row">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="search-box" type="search" placeholder="Search events or #hashtags…" autocomplete="off">
+        <button id="clear-search" title="Clear">✕</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-label">Filter by topic</div>
+      <div class="tag-scroller" id="tag-bar"></div>
+    </div>
+
+    <div class="results-bar">
+      <span id="results-count">33 events</span>
+      <button id="reset-filters">Reset filters</button>
+    </div>
+
+    <div class="event-list" id="event-list"></div>
+    <div class="no-results" id="no-results">No events match — try a different search or tag.</div>
+  </aside>
+
+  <!-- Map + Layer Toggle Buttons -->
+  <div id="map-container">
+    <div id="map"></div>
+    <div class="map-layer-controls">
+      <button class="layer-btn" id="btn-traffic">
+        <span class="layer-dot"></span>
+        🚦 Traffic
+      </button>
+      <button class="layer-btn" id="btn-transit">
+        <span class="layer-dot"></span>
+        🚌 Transit
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── EVENT DATA ───────────────────────────────────────────────────────────────
+const EVENTS = [
+  {title:"Dharma Rain Zen Center",address:"8500 NE Siskiyou St, Portland, OR 97220",lat:45.5428,lng:-122.5748,tags:["ClimateAction","CommunityResilience"]},
+  {title:"Latourell Falls",address:"Historic Columbia River Hwy, Corbett, OR 97019",lat:45.5382,lng:-122.2177,tags:["Nature","Hiking","Networking"]},
+  {title:"Lewis & Clark College",address:"615 S Palatine Hill Rd, Portland, OR 97219",lat:45.4500,lng:-122.6700,tags:["ClimateEducation","Policy","Youth"]},
+  {title:"Willamette Park",address:"6500 S Macadam Ave, Portland, OR 97219",lat:45.4790,lng:-122.6700,tags:["CircularEconomy","ZeroWaste","Community"]},
+  {title:"Sunnyside Community Center",address:"3520 SE Yamhill St, Portland, OR 97214",lat:45.5160,lng:-122.6270,tags:["ClimateDoc","Storytelling","LocalSolutions"]},
+  {title:"Community Warehouse",address:"464 NE 219th Ave, Gresham, OR 97030",lat:45.5280,lng:-122.4370,tags:["Reuse","CircularEconomy"]},
+  {title:"Future ReUse Builders",address:"3625 N Mississippi Ave, Portland, OR 97227",lat:45.5480,lng:-122.6750,tags:["Reuse","DIY","Youth","Education"]},
+  {title:"Energy Empowerment",address:"6844 N Cutter Cir, Portland, OR 97217",lat:45.5700,lng:-122.7000,tags:["EnergyEfficiency","HomeRetrofit","Community"]},
+  {title:"Timberlab",address:"1601 NE Columbia Blvd, Portland, OR 97211",lat:45.5600,lng:-122.6500,tags:["RegenerativeMaterials","MassTimber","Innovation"]},
+  {title:"McMenamins Mission Theater",address:"1624 NW Glisan St, Portland, OR 97209",lat:45.5250,lng:-122.6880,tags:["Youth","Film","ClimateAction","Panel"]},
+  {title:"Place to B",address:"1661 SE 3rd Ave, Portland, OR 97214",lat:45.5120,lng:-122.6630,tags:["ClimateLeadership","ProfessionalDevelopment"]},
+  {title:"Audrey McCall Beach",address:"Portland, OR",lat:45.5100,lng:-122.6740,tags:["Water","Community","ClimateResilience"]},
+  {title:"Metro Regional Government",address:"600 NE Grand Ave, Portland, OR 97232",lat:45.5280,lng:-122.6600,tags:["ClimateResilience","Investment","Policy"]},
+  {title:"Hungry Tiger",address:"213 SE 12th Ave, Portland, OR 97214",lat:45.5210,lng:-122.6540,tags:["EV","FleetElectrification","CleanTransport"]},
+  {title:"PAE",address:"151 SW 1st Ave, Portland, OR 97204",lat:45.5200,lng:-122.6740,tags:["Aviation","ClimateCrisis","SustainableTravel"]},
+  {title:"Sincere Studio",address:"2134 N Flint Ave, Portland, OR 97227",lat:45.5400,lng:-122.6720,tags:["SlowFashion","Mending","SustainableFashion"]},
+  {title:"UpStart Collective",address:"111 SW 5th Ave, Portland, OR 97204",lat:45.5210,lng:-122.6760,tags:["EnergyStorage","Batteries","CleanTech"]},
+  {title:"Hostel Cafe",address:"1810 NW Glisan St, Portland, OR 97209",lat:45.5250,lng:-122.6910,tags:["GlobalClimate","Networking","Development"]},
+  {title:"Vestas",address:"1417 NW Everett St, Portland, OR 97209",lat:45.5250,lng:-122.6850,tags:["WomenInEnergy","CleanEnergy","Leadership"]},
+  {title:"Midtown Beer Garden",address:"431 SW Harvey Milk St, Portland, OR 97204",lat:45.5190,lng:-122.6780,tags:["Networking","HappyHour","ClimateCurious"]},
+  {title:"OSU-Cascades Innovation Co-Lab",address:"650 SW Columbia St, Bend, OR 97702",lat:44.0520,lng:-121.3150,tags:["EnergyTransition","CleanEnergy","HonestConversation"]},
+  {title:"Lents Park",address:"SE 92nd Ave & SE Holgate Blvd, Portland, OR 97266",lat:45.4900,lng:-122.5700,tags:["UrbanForestry","Equity","BikeRide","Pedalpalooza"]},
+  {title:"Kindness Farm",address:"7101 SE 127th Ave, Portland, OR 97236",lat:45.4700,lng:-122.5300,tags:["UrbanFarm","Volunteer","FoodJustice","Community"]},
+  {title:"4779 NE Going St — CoHousing",address:"4779 NE Going St, Portland, OR 97211",lat:45.5540,lng:-122.6150,tags:["CoHousing","CommunityLiving","SustainableLiving"]},
+  {title:"Hillsboro Farmers' Market",address:"150 E Main St, Hillsboro, OR 97123",lat:45.5230,lng:-122.9850,tags:["SustainableLiving","FarmersMarket","EcoFriendly"]},
+  {title:"4053 NE 18th Ave — Solar Home",address:"4053 NE 18th Ave, Portland, OR 97212",lat:45.5500,lng:-122.6500,tags:["Community","Solar","Neighborhood"]},
+  {title:"Social Good Place",address:"4511 SE Main St, Portland, OR 97215",lat:45.5140,lng:-122.6190,tags:["ClothingSwap","SustainableFashion","Community"]},
+  {title:"Eliot Neighborhood",address:"Portland, OR (TBC)",lat:45.5400,lng:-122.6600,tags:["Pride","LGBTQ","Networking","Climate"]},
+  {title:"Slabtown",address:"Portland, OR (TBC)",lat:45.5350,lng:-122.6900,tags:["NaturalFibers","SustainableTextiles","FactoryTour"]},
+  {title:"Hazelwood",address:"Portland, OR (TBC)",lat:45.5100,lng:-122.5600,tags:["GarmentIndustry","SustainableFashion","FactoryTour"]},
+  {title:"Climate Innovation at Work",address:"Portland, OR (TBC)",lat:45.5200,lng:-122.6800,tags:["ClimateInnovation","GreenJobs","EconomicDevelopment"]},
+  {title:"SW Portland — Embodied Carbon",address:"Portland, OR (TBC)",lat:45.4800,lng:-122.7000,tags:["Buildings","EmbodiedCarbon","ClimateSolutions"]},
+  {title:"Global Shocks, Local Tables",address:"NW Portland (TBC)",lat:45.5300,lng:-122.6900,tags:["FoodJustice","SmallholderFarmers","Resilience"]}
+];
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let map, infoWindow;
+let markers       = [];
+let trafficLayer  = null;
+let transitLayer  = null;
+let trafficOn     = false;
+let transitOn     = false;
+let activeTag     = null;
+let selectedIndex = null;
+
+const allTags = [...new Set(EVENTS.flatMap(e => e.tags))].sort();
+
+// ── MAP INIT (called by Google Maps script) ──────────────────────────────────
+function initMap() {
+
+  // 1. Create the map centred on Portland, OR
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: 45.515, lng: -122.678 },
+    zoom: 11,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+    zoomControl: true,
+    styles: [
+      { featureType:"poi",          elementType:"labels",    stylers:[{visibility:"off"}] },
+      { featureType:"transit",      elementType:"labels",    stylers:[{visibility:"simplified"}] },
+      { featureType:"road",         elementType:"labels.icon",stylers:[{visibility:"off"}] },
+      { featureType:"landscape",    elementType:"geometry",  stylers:[{color:"#e8f0eb"}] },
+      { featureType:"water",        elementType:"geometry",  stylers:[{color:"#c2dfe8"}] },
+      { featureType:"road.arterial",elementType:"geometry",  stylers:[{color:"#ffffff"}] },
+      { featureType:"road.local",   elementType:"geometry",  stylers:[{color:"#f4f7f5"}] }
+    ]
+  });
+
+  // 2. Create Traffic and Transit layers (Google Maps Platform API)
+  //    Both start OFF — users toggle them with the buttons in the top-right corner
+  trafficLayer = new google.maps.TrafficLayer();   // live congestion colours
+  transitLayer = new google.maps.TransitLayer();   // TriMet MAX, bus, Streetcar
+
+  // 3. Info window (shared, one at a time)
+  infoWindow = new google.maps.InfoWindow();
+
+  // 4. Drop a marker for every event
+  EVENTS.forEach((event, i) => {
+    const marker = new google.maps.Marker({
+      position: { lat: event.lat, lng: event.lng },
+      map,
+      title: event.title,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: "#2d6a4f",
+        fillOpacity: 1,
+        strokeColor: "#ffffff",
+        strokeWeight: 2,
+        scale: 8
+      }
+    });
+    marker.addListener("click", () => openInfoWindow(i, marker));
+    markers.push(marker);
+  });
+
+  // 5. Build sidebar
+  buildTagBar();
+  buildEventList();
+
+  // 6. Wire up Traffic toggle button
+  document.getElementById("btn-traffic").addEventListener("click", () => {
+    trafficOn = !trafficOn;
+    trafficLayer.setMap(trafficOn ? map : null);
+    document.getElementById("btn-traffic").classList.toggle("active", trafficOn);
+  });
+
+  // 7. Wire up Transit toggle button
+  document.getElementById("btn-transit").addEventListener("click", () => {
+    transitOn = !transitOn;
+    transitLayer.setMap(transitOn ? map : null);
+    document.getElementById("btn-transit").classList.toggle("active", transitOn);
+  });
+}
+
+// ── INFO WINDOW ──────────────────────────────────────────────────────────────
+function openInfoWindow(index, marker) {
+  const ev = EVENTS[index];
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ev.address)}`;
+  const tagsHtml = ev.tags.map(t => `<span class="gm-iw-tag">#${t}</span>`).join("");
+
+  infoWindow.setContent(`
+    <div style="font-family:'Inter',sans-serif;max-width:260px;padding:4px 2px;">
+      <div class="gm-iw-title">${ev.title}</div>
+      <div class="gm-iw-addr">${ev.address}</div>
+      <div class="gm-iw-tags">${tagsHtml}</div>
+      <a class="gm-iw-dir" href="${mapsUrl}" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        Get directions
+      </a>
+    </div>
+  `);
+  infoWindow.open(map, marker);
+
+  document.querySelectorAll(".event-card").forEach(c => c.classList.remove("selected"));
+  const card = document.querySelector(`.event-card[data-index="${index}"]`);
+  if (card) { card.classList.add("selected"); card.scrollIntoView({ block:"nearest", behavior:"smooth" }); }
+  selectedIndex = index;
+}
+
+// ── HASHTAG FILTER BAR ───────────────────────────────────────────────────────
+function buildTagBar() {
+  const bar = document.getElementById("tag-bar");
+  bar.innerHTML = "";
+  allTags.forEach(tag => {
+    const pill = document.createElement("button");
+    pill.className = "tag-pill";
+    pill.textContent = "#" + tag;
+    pill.dataset.tag = tag;
+    pill.addEventListener("click", () => toggleTagFilter(tag));
+    bar.appendChild(pill);
+  });
+}
+
+function toggleTagFilter(tag) {
+  activeTag = activeTag === tag ? null : tag;
+  document.querySelectorAll(".tag-pill").forEach(p => p.classList.toggle("active", p.dataset.tag === activeTag));
+  applyFilters();
+}
+
+// ── EVENT LIST + FILTERING ───────────────────────────────────────────────────
+function buildEventList() { applyFilters(); }
+
+function applyFilters() {
+  const query    = document.getElementById("search-box").value.trim().toLowerCase();
+  const list     = document.getElementById("event-list");
+  const noRes    = document.getElementById("no-results");
+  const resetBtn = document.getElementById("reset-filters");
+
+  list.innerHTML = "";
+  let visible = 0;
+
+  EVENTS.forEach((ev, i) => {
+    const tagMatch  = !activeTag || ev.tags.includes(activeTag);
+    const allText   = (ev.title + " " + ev.address + " " + ev.tags.map(t => "#" + t).join(" ")).toLowerCase();
+    const queryMatch = !query || allText.includes(query);
+    const show = tagMatch && queryMatch;
+
+    markers[i].setVisible(show);
+    if (!show) return;
+
+    visible++;
+    const card = document.createElement("div");
+    card.className = "event-card";
+    card.dataset.index = i;
+    if (selectedIndex === i) card.classList.add("selected");
+
+    const mapsUrl  = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ev.address)}`;
+    const tagsHtml = ev.tags.map(t => {
+      const isActive = t === activeTag;
+      return `<span class="event-tag${isActive ? " highlight" : ""}" data-tag="${t}">#${t}</span>`;
+    }).join("");
+
+    card.innerHTML = `
+      <div class="event-name">${ev.title}</div>
+      <div class="event-address">${ev.address}</div>
+      <div class="event-tags">${tagsHtml}</div>
+      <a class="directions-btn" href="${mapsUrl}" target="_blank" rel="noopener">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        Directions
+      </a>
+    `;
+
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("a") || e.target.closest(".event-tag")) return;
+      map.panTo({ lat: ev.lat, lng: ev.lng });
+      map.setZoom(14);
+      openInfoWindow(i, markers[i]);
+    });
+
+    card.querySelectorAll(".event-tag").forEach(t => {
+      t.addEventListener("click", (e) => { e.stopPropagation(); toggleTagFilter(t.dataset.tag); });
+    });
+
+    list.appendChild(card);
+  });
+
+  const hasFilter = activeTag || query;
+  document.getElementById("results-count").textContent = `${visible} event${visible !== 1 ? "s" : ""}`;
+  document.getElementById("header-count").textContent  = `${visible} event${visible !== 1 ? "s" : ""}`;
+  noRes.style.display    = visible === 0 ? "block" : "none";
+  resetBtn.style.display = hasFilter ? "inline" : "none";
+  document.getElementById("clear-search").style.display = query ? "block" : "none";
+}
+
+// Search
+document.getElementById("search-box").addEventListener("input", applyFilters);
+document.getElementById("clear-search").addEventListener("click", () => {
+  document.getElementById("search-box").value = "";
+  applyFilters();
+});
+
+// Reset all filters
+document.getElementById("reset-filters").addEventListener("click", () => {
+  activeTag = null;
+  document.getElementById("search-box").value = "";
+  document.querySelectorAll(".tag-pill").forEach(p => p.classList.remove("active"));
+  applyFilters();
+});
+</script>
+
+<!-- Load Google Maps Platform API — calls initMap() when ready -->
+<script>
+(function() {
+  const key = "AIzaSyDhEupZREgJIawXjvI9zmwO7DmVS8sInT8";
+  const s   = document.createElement("script");
+  s.src     = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initMap`;
+  s.async   = true;
+  document.head.appendChild(s);
+})();
+</script>
+
+</body>
+</html>
+ENDOFFILE
+echo "Done"
